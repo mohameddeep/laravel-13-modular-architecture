@@ -1,0 +1,43 @@
+<?php
+
+namespace {{MODULE_NAMESPACE}}\Http\Controllers\Api\V1\Dashboard;
+
+use App\Modules\Base\Http\Controllers\BaseController;
+use {{MODULE_NAMESPACE}}\Http\Requests\Api\{{MODEL_NAME}}\Store{{MODEL_NAME}}Request;
+use {{MODULE_NAMESPACE}}\Http\Requests\Api\{{MODEL_NAME}}\Update{{MODEL_NAME}}Request;
+use {{MODULE_NAMESPACE}}\Http\Services\Api\{{MODEL_NAME}}\{{MODEL_NAME}}DashboardService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class {{MODEL_NAME}}Controller extends BaseController
+{
+    public function __construct(
+        protected {{MODEL_NAME}}DashboardService ${{MODEL_VARIABLE}}Service
+    ) {
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        return $this->{{MODEL_VARIABLE}}Service->index($request);
+    }
+
+    public function store(Store{{MODEL_NAME}}Request $request): JsonResponse
+    {
+        return $this->{{MODEL_VARIABLE}}Service->store($request);
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        return $this->{{MODEL_VARIABLE}}Service->show($id);
+    }
+
+    public function update(Update{{MODEL_NAME}}Request $request, int $id): JsonResponse
+    {
+        return $this->{{MODEL_VARIABLE}}Service->update($request, $id);
+    }
+
+    public function destroy(int $id): JsonResponse
+    {
+        return $this->{{MODEL_VARIABLE}}Service->destroy($id);
+    }
+}

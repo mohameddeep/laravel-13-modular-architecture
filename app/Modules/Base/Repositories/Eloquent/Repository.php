@@ -11,9 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 abstract class Repository implements RepositoryInterface
 {
-    public function __construct(protected Model $model)
-    {
-    }
+    public function __construct(protected Model $model) {}
 
     public function getAll(array $columns = ['*']): Collection
     {

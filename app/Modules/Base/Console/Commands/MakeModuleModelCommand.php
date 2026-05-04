@@ -22,7 +22,7 @@ class MakeModuleModelCommand extends Command
     public function handle(): int
     {
         $moduleName = Str::studly($this->argument('module'));
-        $modelName  = Str::studly($this->argument('model'));
+        $modelName = Str::studly($this->argument('model'));
 
         $basePath = app_path("Modules/{$moduleName}");
 
@@ -33,7 +33,7 @@ class MakeModuleModelCommand extends Command
             return self::FAILURE;
         }
 
-        $onlyApi       = (bool) $this->option('api');
+        $onlyApi = (bool) $this->option('api');
         $onlyDashboard = (bool) $this->option('dashboard');
 
         if ($onlyApi && $onlyDashboard) {
@@ -42,27 +42,27 @@ class MakeModuleModelCommand extends Command
             return self::FAILURE;
         }
 
-        $withApi       = ! $onlyDashboard;
+        $withApi = ! $onlyDashboard;
         $withDashboard = ! $onlyApi;
 
-        $table         = Str::snake(Str::pluralStudly($modelName));
+        $table = Str::snake(Str::pluralStudly($modelName));
         $modelVariable = Str::camel($modelName);
         $viewNamespace = Str::lower($moduleName);
-        $routeSegment  = str_replace('_', '-', $table);
-        $moduleNs      = "App\\Modules\\{$moduleName}";
+        $routeSegment = str_replace('_', '-', $table);
+        $moduleNs = "App\\Modules\\{$moduleName}";
 
         $replacements = [
-            '{{MODULE_NAME}}'      => $moduleName,
+            '{{MODULE_NAME}}' => $moduleName,
             '{{MODULE_NAMESPACE}}' => $moduleNs,
-            '{{MODEL_NAME}}'       => $modelName,
-            '{{MODEL_VARIABLE}}'   => $modelVariable,
-            '{{TABLE_NAME}}'       => $table,
-            '{{VIEW_NAMESPACE}}'   => $viewNamespace,
-            '{{ROUTE_SEGMENT}}'    => $routeSegment,
+            '{{MODEL_NAME}}' => $modelName,
+            '{{MODEL_VARIABLE}}' => $modelVariable,
+            '{{TABLE_NAME}}' => $table,
+            '{{VIEW_NAMESPACE}}' => $viewNamespace,
+            '{{ROUTE_SEGMENT}}' => $routeSegment,
         ];
 
         $migrationFile = date('Y_m_d_His').'_'.Str::lower(Str::random(4))."_create_{$table}_table.php";
-        $modelStub     = $this->option('with-factory') ? 'model_with_factory.stub' : 'model.stub';
+        $modelStub = $this->option('with-factory') ? 'model_with_factory.stub' : 'model.stub';
 
         /** @var list<array{stub: string, target: string}> $writes */
         $writes = [
@@ -82,8 +82,11 @@ class MakeModuleModelCommand extends Command
                 ['stub' => 'request_store_api.stub',    'target' => $basePath."/Http/Requests/Api/{$modelName}/Store{$modelName}Request.php"],
                 ['stub' => 'request_update_api.stub',   'target' => $basePath."/Http/Requests/Api/{$modelName}/Update{$modelName}Request.php"],
                 ['stub' => 'resource.stub',              'target' => $basePath."/Http/Resources/{$modelName}/{$modelName}Resource.php"],
-                ['stub' => 'routes_api_web.stub',       'target' => $basePath."/Routes/api/v1/{$routeSegment}_web.php"],
-                ['stub' => 'routes_api_mobile.stub',    'target' => $basePath."/Routes/api/v1/{$routeSegment}_mobile.php"],
+                // Routes are not auto-generated for additional models.
+                // Add routes manually to the existing Routes/api/v1/web.php,
+                // mobile.php, and dashboard.php files.
+                ['stub' => 'controller_api_dashboard.stub', 'target' => $basePath."/Http/Controllers/Api/V1/Dashboard/{$modelName}Controller.php"],
+                ['stub' => 'service_api_dashboard.stub',    'target' => $basePath."/Http/Services/Api/{$modelName}/{$modelName}DashboardService.php"],
             ]);
         }
 
@@ -93,7 +96,7 @@ class MakeModuleModelCommand extends Command
                 ['stub' => 'controller_dashboard.stub',     'target' => $basePath."/Http/Controllers/Dashboard/{$modelName}Controller.php"],
                 ['stub' => 'request_store_dashboard.stub',  'target' => $basePath."/Http/Requests/Dashboard/{$modelName}/Store{$modelName}Request.php"],
                 ['stub' => 'request_update_dashboard.stub', 'target' => $basePath."/Http/Requests/Dashboard/{$modelName}/Update{$modelName}Request.php"],
-                ['stub' => 'routes_dashboard.stub',          'target' => $basePath."/Routes/dashboard/{$routeSegment}.php"],
+                // Add blade routes manually to Routes/dashboard/dashboard.php.
                 ['stub' => 'layout.stub',                    'target' => $basePath."/Resources/views/dashboard/{$routeSegment}/layout.blade.php"],
                 ['stub' => 'view_index.stub',                'target' => $basePath."/Resources/views/dashboard/{$routeSegment}/index.blade.php"],
                 ['stub' => 'view_create.stub',               'target' => $basePath."/Resources/views/dashboard/{$routeSegment}/create.blade.php"],
@@ -107,7 +110,7 @@ class MakeModuleModelCommand extends Command
 
         if ($this->option('with-tests') && $withApi) {
             $writes[] = [
-                'stub'   => 'test.stub',
+                'stub' => 'test.stub',
                 'target' => base_path("tests/Feature/Modules/{$moduleName}/{$modelName}ApiTest.php"),
             ];
         }
@@ -124,8 +127,11 @@ class MakeModuleModelCommand extends Command
 
         $this->components->info("Model [{$modelName}] added to module [{$moduleName}].");
         $this->newLine();
-        $this->line('To seed only this model:');
-        $this->line("    php artisan db:seed --class=\"{$moduleNs}\\Database\\Seeders\\{$modelName}Seeder\"");
+        $this->line('Next steps:');
+        $this->line("  1. Add routes to Routes/api/v1/web.php, mobile.php, and dashboard.php");
+        $this->line("  2. Add blade routes to Routes/dashboard/dashboard.php");
+        $this->line("  3. To seed only this model:");
+        $this->line("       php artisan db:seed --class=\"{$moduleNs}\\Database\\Seeders\\{$modelName}Seeder\"");
 
         return self::SUCCESS;
     }
@@ -176,7 +182,7 @@ class MakeModuleModelCommand extends Command
         }
 
         $contents = File::get($providerPath);
-        $binding  = "\$this->bindPlatformService({$modelName}Service::class, {$modelName}WebService::class, {$modelName}MobileService::class);";
+        $binding = "\$this->bindPlatformService({$modelName}Service::class, {$modelName}WebService::class, {$modelName}MobileService::class);";
 
         if (str_contains($contents, $binding)) {
             return;
@@ -184,8 +190,8 @@ class MakeModuleModelCommand extends Command
 
         // Add use statements if the trait is already there, else add use trait line too
         $useAbstract = "use {$moduleNs}\\Http\\Services\\Api\\{$modelName}\\{$modelName}MobileService;";
-        $useWeb      = "use {$moduleNs}\\Http\\Services\\Api\\{$modelName}\\{$modelName}Service;";
-        $useMobile   = "use {$moduleNs}\\Http\\Services\\Api\\{$modelName}\\{$modelName}WebService;";
+        $useWeb = "use {$moduleNs}\\Http\\Services\\Api\\{$modelName}\\{$modelName}Service;";
+        $useMobile = "use {$moduleNs}\\Http\\Services\\Api\\{$modelName}\\{$modelName}WebService;";
 
         // Insert use statements before the class declaration
         $contents = preg_replace(

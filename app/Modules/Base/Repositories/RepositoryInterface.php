@@ -2,6 +2,4 @@
 
 namespace App\Modules\Base\Repositories;
 
-interface RepositoryInterface extends PaginatableRepositoryInterface, ReadableRepositoryInterface, SoftDeletableRepositoryInterface, WritableRepositoryInterface
-{
-}
+interface RepositoryInterface extends PaginatableRepositoryInterface, ReadableRepositoryInterface, SoftDeletableRepositoryInterface, WritableRepositoryInterface {}

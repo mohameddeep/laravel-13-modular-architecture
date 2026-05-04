@@ -63,7 +63,7 @@ class MakeModuleCommand extends Command
 
         $migrationFile = date('Y_m_d_His').'_'.Str::lower(Str::random(4))."_create_{$table}_table.php";
 
-        $modelStub    = $this->option('with-factory') ? 'model_with_factory.stub' : 'model.stub';
+        $modelStub = $this->option('with-factory') ? 'model_with_factory.stub' : 'model.stub';
         $providerStub = $withApi ? 'provider.stub' : 'provider_dashboard_only.stub';
 
         /** @var list<array{stub: string, target: string}> $writes */
@@ -85,8 +85,11 @@ class MakeModuleCommand extends Command
                 ['stub' => 'request_store_api.stub',    'target' => $basePath."/Http/Requests/Api/{$modelName}/Store{$modelName}Request.php"],
                 ['stub' => 'request_update_api.stub',   'target' => $basePath."/Http/Requests/Api/{$modelName}/Update{$modelName}Request.php"],
                 ['stub' => 'resource.stub',              'target' => $basePath."/Http/Resources/{$modelName}/{$modelName}Resource.php"],
-                ['stub' => 'routes_api_web.stub',       'target' => $basePath.'/Routes/api/v1/web.php'],
-                ['stub' => 'routes_api_mobile.stub',    'target' => $basePath.'/Routes/api/v1/mobile.php'],
+                ['stub' => 'routes_api_web.stub',           'target' => $basePath.'/Routes/api/v1/web.php'],
+                ['stub' => 'routes_api_mobile.stub',        'target' => $basePath.'/Routes/api/v1/mobile.php'],
+                ['stub' => 'routes_api_dashboard.stub',     'target' => $basePath.'/Routes/api/v1/dashboard.php'],
+                ['stub' => 'controller_api_dashboard.stub', 'target' => $basePath."/Http/Controllers/Api/V1/Dashboard/{$modelName}Controller.php"],
+                ['stub' => 'service_api_dashboard.stub',    'target' => $basePath."/Http/Services/Api/{$modelName}/{$modelName}DashboardService.php"],
             ]);
         }
 
@@ -99,7 +102,7 @@ class MakeModuleCommand extends Command
                 ['stub' => 'routes_dashboard.stub', 'target' => $basePath.'/Routes/dashboard/dashboard.php'],
                 ['stub' => 'layout.stub',     'target' => $basePath."/Resources/views/dashboard/{$routeSegment}/layout.blade.php"],
                 ['stub' => 'view_index.stub', 'target' => $basePath."/Resources/views/dashboard/{$routeSegment}/index.blade.php"],
-                ['stub' => 'view_create.stub','target' => $basePath."/Resources/views/dashboard/{$routeSegment}/create.blade.php"],
+                ['stub' => 'view_create.stub', 'target' => $basePath."/Resources/views/dashboard/{$routeSegment}/create.blade.php"],
                 ['stub' => 'view_edit.stub',  'target' => $basePath."/Resources/views/dashboard/{$routeSegment}/edit.blade.php"],
             ]);
         }

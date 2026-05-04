@@ -4,6 +4,7 @@ use App\Modules\Base\Http\Helpers\Http;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -98,7 +99,7 @@ if (! function_exists('formatDate')) {
         }
 
         try {
-            return \Illuminate\Support\Carbon::parse($date)->format($format);
+            return Carbon::parse($date)->format($format);
         } catch (Throwable) {
             return null;
         }
