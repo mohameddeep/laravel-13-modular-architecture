@@ -1,0 +1,11 @@
+@extends('{{VIEW_NAMESPACE}}::dashboard.{{ROUTE_SEGMENT}}.layout')
+
+@section('title', '{{MODEL_NAME}}')
+
+@section('content')
+    <h1>{{ __('Create') }}</h1>
+    <form action="{{ route('dashboard.{{VIEW_NAMESPACE}}.store') }}" method="post">
+        @csrf
+        <button type="submit">{{ __('Save') }}</button>
+    </form>
+@endsection

@@ -1,0 +1,15 @@
+<?php
+
+namespace {{MODULE_NAMESPACE}}\Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+class {{MODULE_NAME}}DatabaseSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $this->call([
+            {{MODEL_NAME}}Seeder::class,
+        ]);
+    }
+}

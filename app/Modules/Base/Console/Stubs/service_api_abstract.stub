@@ -1,0 +1,29 @@
+<?php
+
+namespace {{MODULE_NAMESPACE}}\Http\Services\Api\{{MODEL_NAME}};
+
+use {{MODULE_NAMESPACE}}\Http\Requests\Api\{{MODEL_NAME}}\Store{{MODEL_NAME}}Request;
+use {{MODULE_NAMESPACE}}\Http\Requests\Api\{{MODEL_NAME}}\Update{{MODEL_NAME}}Request;
+use {{MODULE_NAMESPACE}}\Repositories\{{MODEL_NAME}}RepositoryInterface;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+abstract class {{MODEL_NAME}}Service
+{
+    public function __construct(
+        protected {{MODEL_NAME}}RepositoryInterface ${{MODEL_VARIABLE}}Repository
+    ) {
+    }
+
+    abstract public static function platform(): string;
+
+    abstract public function index(Request $request): JsonResponse;
+
+    abstract public function store(Store{{MODEL_NAME}}Request $request): JsonResponse;
+
+    abstract public function show(int $id): JsonResponse;
+
+    abstract public function update(Update{{MODEL_NAME}}Request $request, int $id): JsonResponse;
+
+    abstract public function destroy(int $id): JsonResponse;
+}

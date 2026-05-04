@@ -1,0 +1,34 @@
+<?php
+
+namespace {{MODULE_NAMESPACE}}\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class {{MODULE_NAME}}ServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        //
+    }
+
+    public function boot(): void
+    {
+        $base = __DIR__.'/..';
+
+        $dashboardPath = $base.'/Routes/dashboard';
+
+        if (is_dir($dashboardPath)) {
+            foreach (glob($dashboardPath.'/*.php') ?: [] as $file) {
+                $this->loadRoutesFrom($file);
+            }
+        }
+
+        $this->loadMigrationsFrom($base.'/database/migrations');
+
+        $views = $base.'/Resources/views';
+
+        if (is_dir($views)) {
+            $this->loadViewsFrom($views, '{{VIEW_NAMESPACE}}');
+        }
+    }
+}

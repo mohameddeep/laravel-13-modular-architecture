@@ -1,0 +1,11 @@
+<?php
+
+use {{MODULE_NAMESPACE}}\Http\Controllers\Api\V1\{{MODEL_NAME}}Controller;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware(['api'])
+    ->prefix('api/v1/mobile')
+    ->name('api.v1.mobile.')
+    ->group(function (): void {
+        Route::apiResource('{{ROUTE_SEGMENT}}', {{MODEL_NAME}}Controller::class);
+    });

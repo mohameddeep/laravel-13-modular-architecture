@@ -1,0 +1,48 @@
+<?php
+
+namespace {{MODULE_NAMESPACE}}\Http\Controllers\Dashboard;
+
+use App\Http\Controllers\Controller;
+use {{MODULE_NAMESPACE}}\Http\Requests\Dashboard\{{MODEL_NAME}}\Store{{MODEL_NAME}}Request;
+use {{MODULE_NAMESPACE}}\Http\Requests\Dashboard\{{MODEL_NAME}}\Update{{MODEL_NAME}}Request;
+use {{MODULE_NAMESPACE}}\Http\Services\Dashboard\{{MODEL_NAME}}\{{MODEL_NAME}}Service;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+
+class {{MODEL_NAME}}Controller extends Controller
+{
+    public function __construct(
+        protected {{MODEL_NAME}}Service ${{MODEL_VARIABLE}}Service
+    ) {
+    }
+
+    public function index(): View
+    {
+        return $this->{{MODEL_VARIABLE}}Service->index();
+    }
+
+    public function create(): View
+    {
+        return $this->{{MODEL_VARIABLE}}Service->create();
+    }
+
+    public function store(Store{{MODEL_NAME}}Request $request): RedirectResponse
+    {
+        return $this->{{MODEL_VARIABLE}}Service->store($request);
+    }
+
+    public function edit(int $id): View|RedirectResponse
+    {
+        return $this->{{MODEL_VARIABLE}}Service->edit($id);
+    }
+
+    public function update(Update{{MODEL_NAME}}Request $request, int $id): RedirectResponse
+    {
+        return $this->{{MODEL_VARIABLE}}Service->update($request, $id);
+    }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        return $this->{{MODEL_VARIABLE}}Service->destroy($id);
+    }
+}

@@ -1,0 +1,107 @@
+<?php
+
+namespace {{MODULE_NAMESPACE}}\Http\Services\Dashboard\{{MODEL_NAME}};
+
+use {{MODULE_NAMESPACE}}\Http\Requests\Dashboard\{{MODEL_NAME}}\Store{{MODEL_NAME}}Request;
+use {{MODULE_NAMESPACE}}\Http\Requests\Dashboard\{{MODEL_NAME}}\Update{{MODEL_NAME}}Request;
+use {{MODULE_NAMESPACE}}\Repositories\{{MODEL_NAME}}RepositoryInterface;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
+use Throwable;
+
+class {{MODEL_NAME}}Service
+{
+    public function __construct(
+        protected {{MODEL_NAME}}RepositoryInterface ${{MODEL_VARIABLE}}Repository
+    ) {
+    }
+
+    public function index(): View
+    {
+        $items = $this->{{MODEL_VARIABLE}}Repository->getAll();
+
+        return view('{{VIEW_NAMESPACE}}::dashboard.{{ROUTE_SEGMENT}}.index', compact('items'));
+    }
+
+    public function create(): View
+    {
+        return view('{{VIEW_NAMESPACE}}::dashboard.{{ROUTE_SEGMENT}}.create');
+    }
+
+    public function store(Store{{MODEL_NAME}}Request $request): RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+            $this->{{MODEL_VARIABLE}}Repository->create($request->validated());
+            DB::commit();
+
+            return redirect()
+                ->route('dashboard.{{VIEW_NAMESPACE}}.index')
+                ->with('success', __('Created.'));
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            return back()->with('error', __('Something went wrong.'))->withInput();
+        }
+    }
+
+    public function edit(int $id): View|RedirectResponse
+    {
+        ${{MODEL_VARIABLE}} = $this->{{MODEL_VARIABLE}}Repository->getById($id);
+
+        if (${{MODEL_VARIABLE}} === null) {
+            return redirect()->route('dashboard.{{VIEW_NAMESPACE}}.index')->with('error', __('Not found.'));
+        }
+
+        return view('{{VIEW_NAMESPACE}}::dashboard.{{ROUTE_SEGMENT}}.edit', compact('{{MODEL_VARIABLE}}'));
+    }
+
+    public function update(Update{{MODEL_NAME}}Request $request, int $id): RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+            $updated = $this->{{MODEL_VARIABLE}}Repository->update($id, $request->validated());
+
+            if (! $updated) {
+                DB::rollBack();
+
+                return redirect()->route('dashboard.{{VIEW_NAMESPACE}}.index')->with('error', __('Not found.'));
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('dashboard.{{VIEW_NAMESPACE}}.index')
+                ->with('success', __('Updated.'));
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            return back()->with('error', __('Something went wrong.'))->withInput();
+        }
+    }
+
+    public function destroy(int $id): RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+            $deleted = $this->{{MODEL_VARIABLE}}Repository->delete($id);
+
+            if ($deleted === null) {
+                DB::rollBack();
+
+                return redirect()->route('dashboard.{{VIEW_NAMESPACE}}.index')->with('error', __('Not found.'));
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('dashboard.{{VIEW_NAMESPACE}}.index')
+                ->with('success', __('Deleted.'));
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            return redirect()->route('dashboard.{{VIEW_NAMESPACE}}.index')->with('error', __('Something went wrong.'));
+        }
+    }
+}

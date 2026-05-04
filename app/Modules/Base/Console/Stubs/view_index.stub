@@ -1,0 +1,21 @@
+@extends('{{VIEW_NAMESPACE}}::dashboard.{{ROUTE_SEGMENT}}.layout')
+
+@section('title', '{{MODEL_NAME}}')
+
+@section('content')
+    <h1>{{ __('Index') }}</h1>
+    <p><a href="{{ route('dashboard.{{VIEW_NAMESPACE}}.create') }}">{{ __('Create') }}</a></p>
+    <ul>
+        @foreach ($items as ${{MODEL_VARIABLE}})
+            <li>
+                #{{ ${{MODEL_VARIABLE}}->id }}
+                <a href="{{ route('dashboard.{{VIEW_NAMESPACE}}.edit', ${{MODEL_VARIABLE}}->id) }}">{{ __('Edit') }}</a>
+                <form action="{{ route('dashboard.{{VIEW_NAMESPACE}}.destroy', ${{MODEL_VARIABLE}}->id) }}" method="post" style="display:inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit">{{ __('Delete') }}</button>
+                </form>
+            </li>
+        @endforeach
+    </ul>
+@endsection

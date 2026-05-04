@@ -1,0 +1,25 @@
+<?php
+
+namespace {{MODULE_NAMESPACE}}\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class {{MODEL_NAME}} extends Model
+{
+    use HasFactory;
+
+    protected $table = '{{TABLE_NAME}}';
+
+    protected $fillable = [];
+
+    protected function casts(): array
+    {
+        return [];
+    }
+
+    protected static function newFactory(): \Illuminate\Database\Eloquent\Factories\Factory
+    {
+        return \{{MODULE_NAMESPACE}}\Database\Factories\{{MODEL_NAME}}Factory::new();
+    }
+}

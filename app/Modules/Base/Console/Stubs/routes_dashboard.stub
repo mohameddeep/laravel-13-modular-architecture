@@ -1,0 +1,12 @@
+<?php
+
+use {{MODULE_NAMESPACE}}\Http\Controllers\Dashboard\{{MODEL_NAME}}Controller;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware(['web'])
+    ->prefix('dashboard')
+    ->group(function (): void {
+        Route::resource('{{ROUTE_SEGMENT}}', {{MODEL_NAME}}Controller::class)
+            ->except(['show'])
+            ->names('dashboard.{{VIEW_NAMESPACE}}');
+    });

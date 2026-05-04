@@ -1,0 +1,13 @@
+<?php
+
+namespace Tests\Feature\Modules\{{MODULE_NAME}};
+
+use Tests\TestCase;
+
+class {{MODEL_NAME}}ApiTest extends TestCase
+{
+    public function test_index_returns_ok(): void
+    {
+        $this->getJson(route('api.v1.{{ROUTE_SEGMENT}}.index'))->assertOk();
+    }
+}
