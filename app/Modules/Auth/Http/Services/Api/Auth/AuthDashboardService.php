@@ -2,102 +2,65 @@
 
 namespace App\Modules\Auth\Http\Services\Api\Auth;
 
+use App\Modules\Auth\Repositories\AdminRepositoryInterface;
 use App\Modules\Base\Http\Helpers\Http;
-use App\Modules\Base\Http\Traits\Responser;
-use App\Modules\Auth\Http\Requests\Api\Auth\StoreAuthRequest;
-use App\Modules\Auth\Http\Requests\Api\Auth\UpdateAuthRequest;
-use App\Modules\Auth\Http\Resources\Auth\AuthResource;
-use App\Modules\Auth\Repositories\AuthRepositoryInterface;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Throwable;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AuthDashboardService
 {
-    use Responser;
-
     public function __construct(
-        protected AuthRepositoryInterface $authRepository
-    ) {
-    }
+        private readonly AdminRepositoryInterface $adminRepository,
+    ) {}
 
-    public function index(Request $request): JsonResponse
-    {
-        $perPage = (int) $request->query('per_page', 15);
-        $paginator = $this->authRepository->paginate($perPage);
-
-        return $this->respondWithPaginator($paginator, AuthResource::class);
-    }
-
-    public function store(StoreAuthRequest $request): JsonResponse
+    public function signIn(Request $request): JsonResponse
     {
         try {
-            DB::beginTransaction();
-            $auth = $this->authRepository->create($request->validated());
-            DB::commit();
+            $data = $request->validate([
+                'email'    => ['required', 'email'],
+                'password' => ['required', 'string'],
+            ]);
 
-            return $this->responseSuccess(Http::CREATED, __('Created.'), new AuthResource($auth));
-        } catch (Throwable $e) {
-            DB::rollBack();
+            $admin = $this->adminRepository->findByEmail($data['email']);
 
-            return catchError($e);
-        }
-    }
-
-    public function show(int $id): JsonResponse
-    {
-        $auth = $this->authRepository->getById($id);
-
-        if ($auth === null) {
-            return $this->responseFail(Http::NOT_FOUND, __('Not found.'));
-        }
-
-        return $this->responseSuccess(Http::OK, __('OK.'), new AuthResource($auth));
-    }
-
-    public function update(UpdateAuthRequest $request, int $id): JsonResponse
-    {
-        try {
-            DB::beginTransaction();
-            $updated = $this->authRepository->update($id, $request->validated());
-
-            if (! $updated) {
-                DB::rollBack();
-
-                return $this->responseFail(Http::NOT_FOUND, __('Not found.'));
+            if (! $admin) {
+                return responseFail(Http::NOT_FOUND, __('messages.Email not registered. Please create a new account'));
             }
 
-            $auth = $this->authRepository->getById($id);
-            DB::commit();
+            if (empty($admin->password) || ! Hash::check($data['password'], $admin->password)) {
+                return responseFail(Http::BAD_REQUEST, __('messages.Incorrect email or password'));
+            }
 
-            return $this->responseSuccess(Http::OK, __('Updated.'), new AuthResource($auth));
-        } catch (Throwable $e) {
-            DB::rollBack();
+            $token = $admin->createToken('dashboard')->plainTextToken;
 
-            return catchError($e);
+            Log::info('Admin signed in', ['admin_id' => $admin->id, 'ip' => $request->ip()]);
+
+            return responseSuccess(Http::OK, __('messages.Login successful'), [
+                'admin' => [
+                    'id'    => $admin->id,
+                    'name'  => $admin->name,
+                    'email' => $admin->email,
+                ],
+                'token' => $token,
+            ]);
+        } catch (Exception $e) {
+            Log::error('Dashboard Sign In Error: '.$e->getMessage(), ['ip' => $request->ip()]);
+
+            return responseFail(Http::BAD_REQUEST, __('messages.Something went wrong'));
         }
     }
 
-    public function destroy(int $id): JsonResponse
+    public function signOut(Request $request): JsonResponse
     {
         try {
-            DB::beginTransaction();
-            $deleted = $this->authRepository->delete($id);
+            $request->user('admin-api')->currentAccessToken()->delete();
 
-            if ($deleted === null) {
-                DB::rollBack();
-
-                return $this->responseFail(Http::NOT_FOUND, __('Not found.'));
-            }
-
-            DB::commit();
-
-            return $this->responseSuccess(Http::OK, __('Deleted.'));
-        } catch (Throwable $e) {
-            DB::rollBack();
-
-            return catchError($e);
+            return responseSuccess(Http::OK, __('messages.Successfully loggedOut'));
+        } catch (Exception $e) {
+            return responseFail(Http::BAD_REQUEST, __('messages.Something went wrong'));
         }
     }
 }

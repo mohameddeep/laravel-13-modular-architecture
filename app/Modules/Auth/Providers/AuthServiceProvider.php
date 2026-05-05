@@ -2,19 +2,13 @@
 
 namespace App\Modules\Auth\Providers;
 
-use App\Modules\Base\Http\Traits\ResolvesPlatformService;
 use App\Modules\Auth\Http\Services\Api\Auth\AuthMobileService;
 use App\Modules\Auth\Http\Services\Api\Auth\AuthService;
 use App\Modules\Auth\Http\Services\Api\Auth\AuthWebService;
+use App\Modules\Auth\Repositories\OtpRepositoryInterface;
+use App\Modules\Auth\Repositories\Eloquent\OtpRepository;
+use App\Modules\Base\Http\Traits\ResolvesPlatformService;
 use Illuminate\Support\ServiceProvider;
-
-use App\Modules\Auth\Http\Services\Api\Admin\AdminMobileService;
-use App\Modules\Auth\Http\Services\Api\Admin\AdminService;
-use App\Modules\Auth\Http\Services\Api\Admin\AdminWebService;
-
-use App\Modules\Auth\Http\Services\Api\User\UserMobileService;
-use App\Modules\Auth\Http\Services\Api\User\UserService;
-use App\Modules\Auth\Http\Services\Api\User\UserWebService;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -22,13 +16,12 @@ class AuthServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        $this->bindPlatformService(UserService::class, UserWebService::class, UserMobileService::class);
-        $this->bindPlatformService(AdminService::class, AdminWebService::class, AdminMobileService::class);
-        $this->bindPlatformService(
-            AuthService::class,
-            AuthWebService::class,
-            AuthMobileService::class,
-        );
+        // Bind OTP repository (auto-bind via RepositoryServiceProvider won't pick it up
+        // because OtpRepositoryInterface doesn't match the naming convention exactly)
+        $this->app->bind(OtpRepositoryInterface::class, OtpRepository::class);
+
+        // Bind AuthService to the correct platform implementation (web vs mobile)
+        $this->bindPlatformService(AuthService::class, AuthWebService::class, AuthMobileService::class);
     }
 
     public function boot(): void
@@ -43,13 +36,7 @@ class AuthServiceProvider extends ServiceProvider
             }
         }
 
-        $dashboardPath = $base.'/Routes/dashboard';
-
-        if (is_dir($dashboardPath)) {
-            foreach (glob($dashboardPath.'/*.php') ?: [] as $file) {
-                $this->loadRoutesFrom($file);
-            }
-        }
+        // Dashboard routes are loaded from BaseServiceProvider (localized wrapper).
 
         $this->loadMigrationsFrom($base.'/database/migrations');
 

@@ -7,6 +7,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
 if (! function_exists('responseSuccess')) {
     function responseSuccess(int|string $status, string $message, mixed $data = null, array $headers = []): JsonResponse
@@ -84,6 +85,60 @@ if (! function_exists('fileFullPath')) {
         }
 
         return asset('storage/'.$path);
+    }
+}
+
+if (! function_exists('has_permission')) {
+    function has_permission(string $permission): bool
+    {
+        $admin = auth('admin')->user();
+
+        return $admin !== null && (bool) $admin->hasPermission($permission);
+    }
+}
+
+if (! function_exists('has_role')) {
+    function has_role(string $role): bool
+    {
+        $admin = auth('admin')->user();
+
+        return $admin !== null && (bool) $admin->hasRole($role);
+    }
+}
+
+if (! function_exists('dashboard_is_rtl')) {
+    function dashboard_is_rtl(): bool
+    {
+        return app()->getLocale() === 'ar';
+    }
+}
+
+if (! function_exists('dashboard_css_bundle_dir')) {
+    function dashboard_css_bundle_dir(): string
+    {
+        return dashboard_is_rtl() ? 'css-rtl' : 'css';
+    }
+}
+
+if (! function_exists('dashboard_vendors_rtl_suffix')) {
+    function dashboard_vendors_rtl_suffix(): string
+    {
+        return dashboard_is_rtl() ? '-rtl' : '';
+    }
+}
+
+if (! function_exists('dashboard_supported_locales')) {
+    /** @return array<string, array{name: string, script: string, native: string, regional: string}> */
+    function dashboard_supported_locales(): array
+    {
+        return LaravelLocalization::getSupportedLocales();
+    }
+}
+
+if (! function_exists('dashboard_localized_url')) {
+    function dashboard_localized_url(string $locale): string
+    {
+        return LaravelLocalization::getLocalizedURL($locale);
     }
 }
 

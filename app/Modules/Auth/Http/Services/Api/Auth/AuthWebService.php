@@ -2,101 +2,168 @@
 
 namespace App\Modules\Auth\Http\Services\Api\Auth;
 
+use App\Modules\Auth\Http\Requests\Api\Auth\ResendOtpRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\SignInRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\SignUpRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\VerifyOtpRequest;
+use App\Modules\Auth\Http\Resources\User\UserResource;
+use App\Modules\Auth\Models\User;
 use App\Modules\Base\Http\Helpers\Http;
-use App\Modules\Base\Http\Traits\Responser;
-use App\Modules\Auth\Http\Requests\Api\Auth\StoreAuthRequest;
-use App\Modules\Auth\Http\Requests\Api\Auth\UpdateAuthRequest;
-use App\Modules\Auth\Http\Resources\Auth\AuthResource;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Throwable;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AuthWebService extends AuthService
 {
-    use Responser;
-
     public static function platform(): string
     {
-        return 'website';
+        return 'web';
     }
 
-    public function index(Request $request): JsonResponse
-    {
-        $perPage = (int) $request->query('per_page', 15);
-        $paginator = $this->authRepository->paginate($perPage);
-
-        return $this->respondWithPaginator($paginator, AuthResource::class);
-    }
-
-    public function store(StoreAuthRequest $request): JsonResponse
+    public function signUp(SignUpRequest $request): JsonResponse
     {
         try {
+            $data = $request->validated();
+
             DB::beginTransaction();
-            $auth = $this->authRepository->create($request->validated());
+
+            $user = $this->userRepository->create([
+                'name'         => $data['name'],
+                'email'        => $data['email'],
+                'phone'        => $data['phone'] ?? null,
+                'password'     => $data['password'],
+                'is_active'    => false,
+                'otp_verified' => false,
+            ]);
+
+            $otp = $this->otpService->sendEmailOtp($user->email, $user->name, $user->id);
+
             DB::commit();
 
-            return $this->responseSuccess(Http::CREATED, __('Created.'), new AuthResource($auth));
-        } catch (Throwable $e) {
-            DB::rollBack();
+            Log::info('User signed up', ['user_id' => $user->id, 'ip' => $request->ip()]);
 
-            return catchError($e);
+            return responseSuccess(Http::CREATED, __('messages.created successfully'), [
+                'user'      => new UserResource($user->fresh()),
+                'otp_token' => $otp->token,
+            ]);
+        } catch (Exception $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            Log::error('Sign Up Error: '.$e->getMessage(), ['ip' => $request->ip()]);
+
+            return responseFail(Http::BAD_REQUEST, __('messages.Something went wrong'));
         }
     }
 
-    public function show(int $id): JsonResponse
-    {
-        $auth = $this->authRepository->getById($id);
-
-        if ($auth === null) {
-            return $this->responseFail(Http::NOT_FOUND, __('Not found.'));
-        }
-
-        return $this->responseSuccess(Http::OK, __('OK.'), new AuthResource($auth));
-    }
-
-    public function update(UpdateAuthRequest $request, int $id): JsonResponse
+    public function verifyOtp(VerifyOtpRequest $request): JsonResponse
     {
         try {
-            DB::beginTransaction();
-            $updated = $this->authRepository->update($id, $request->validated());
+            $data = $request->validated();
 
-            if (! $updated) {
-                DB::rollBack();
+            $user = $this->userRepository->findByEmail($data['username']);
 
-                return $this->responseFail(Http::NOT_FOUND, __('Not found.'));
+            if (! $user) {
+                return responseFail(Http::NOT_FOUND, __('messages.User not found'));
             }
 
-            $auth = $this->authRepository->getById($id);
-            DB::commit();
+            $otp = $this->otpService->verifyEmailOtpByToken($data['otp_token'], $data['code']);
 
-            return $this->responseSuccess(Http::OK, __('Updated.'), new AuthResource($auth));
-        } catch (Throwable $e) {
-            DB::rollBack();
+            if ($otp instanceof JsonResponse) {
+                return $otp;
+            }
 
-            return catchError($e);
+            if ($otp->identifier !== $data['username']) {
+                return responseFail(Http::BAD_REQUEST, __('messages.Username does not match the OTP'));
+            }
+
+            $this->userRepository->update($user->id, [
+                'otp_verified' => true,
+                'is_active'    => true,
+            ]);
+
+            $user  = $user->fresh();
+            $token = $user->createToken('web')->plainTextToken;
+
+            Log::info('OTP verified', ['user_id' => $user->id, 'ip' => $request->ip()]);
+
+            return responseSuccess(Http::OK, __('messages.Login verified successfully'), [
+                'user'  => new UserResource($user),
+                'token' => $token,
+            ]);
+        } catch (Exception $e) {
+            Log::error('Verify OTP Error: '.$e->getMessage(), ['ip' => $request->ip()]);
+
+            return responseFail(Http::BAD_REQUEST, __('messages.Something went wrong'));
         }
     }
 
-    public function destroy(int $id): JsonResponse
+    public function resendOtp(ResendOtpRequest $request): JsonResponse
+    {
+        return $this->otpService->resendEmailOtp($request->validated('otp_token'));
+    }
+
+    public function signIn(SignInRequest $request): JsonResponse
     {
         try {
-            DB::beginTransaction();
-            $deleted = $this->authRepository->delete($id);
+            $data     = $request->validated();
+            $username = trim((string) $data['username']);
+            $isPhone  = (bool) preg_match('/^\+[1-9]\d{7,15}$/', $username);
 
-            if ($deleted === null) {
-                DB::rollBack();
+            $user = $isPhone
+                ? $this->userRepository->findByPhone($username)
+                : $this->userRepository->findByEmail($username);
 
-                return $this->responseFail(Http::NOT_FOUND, __('Not found.'));
+            if (! $user) {
+                return responseFail(Http::NOT_FOUND, $isPhone
+                    ? __('messages.Phone not registered. Please create a new account')
+                    : __('messages.Email not registered. Please create a new account')
+                );
             }
 
-            DB::commit();
+            if ($error = $this->ensureUserCanLogin($user, $data['password'])) {
+                return $error;
+            }
 
-            return $this->responseSuccess(Http::OK, __('Deleted.'));
-        } catch (Throwable $e) {
-            DB::rollBack();
+            $token = $user->createToken('web')->plainTextToken;
 
-            return catchError($e);
+            Log::info('User signed in', ['user_id' => $user->id, 'ip' => $request->ip()]);
+
+            return responseSuccess(Http::OK, __('messages.Login successful'), [
+                'user'  => new UserResource($user->fresh()),
+                'token' => $token,
+            ]);
+        } catch (Exception $e) {
+            Log::error('Sign In Error: '.$e->getMessage(), ['ip' => $request->ip()]);
+
+            return responseFail(Http::BAD_REQUEST, __('messages.Something went wrong'));
         }
+    }
+
+    public function signOut(Request $request): JsonResponse
+    {
+        try {
+            $request->user()->currentAccessToken()->delete();
+
+            return responseSuccess(Http::OK, __('messages.Successfully loggedOut'));
+        } catch (Exception $e) {
+            return responseFail(Http::BAD_REQUEST, __('messages.Something went wrong'));
+        }
+    }
+
+    private function ensureUserCanLogin(User $user, string $password): ?JsonResponse
+    {
+        if (! $user->is_active || ! $user->otp_verified) {
+            return responseFail(Http::FORBIDDEN, __('messages.Account is inactive. Please contact the administration'));
+        }
+
+        if (empty($user->password) || ! Hash::check($password, $user->password)) {
+            return responseFail(Http::BAD_REQUEST, __('messages.Incorrect email or password'));
+        }
+
+        return null;
     }
 }

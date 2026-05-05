@@ -3,6 +3,8 @@
 namespace App\Modules\Auth\Http\Requests\Dashboard\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UpdateAdminRequest extends FormRequest
 {
@@ -11,11 +13,14 @@ class UpdateAdminRequest extends FormRequest
         return true;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     public function rules(): array
     {
-        return [];
+        $id = $this->route('admin');
+
+        return [
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'email', 'max:255', Rule::unique('admins', 'email')->ignore($id)],
+            'password' => ['nullable', 'confirmed', Password::min(8)],
+        ];
     }
 }

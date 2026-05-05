@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'Success'                                                                     => 'نجاح',
+    'Created successfully'                                                        => 'تم الإنشاء بنجاح',
+    'Updated successfully'                                                        => 'تم التحديث بنجاح',
+    'Deleted successfully'                                                        => 'تم الحذف بنجاح',
+    'Not found'                                                                   => 'غير موجود',
+    'Something went wrong'                                                        => 'حدث خطأ ما',
+    'Unauthenticated'                                                             => 'غير مُصادق عليه',
+    'Unauthorized'                                                                => 'غير مصرح',
+    'Login successful'                                                            => 'تم تسجيل الدخول بنجاح',
+    'Logout successful'                                                           => 'تم تسجيل الخروج بنجاح',
+    'OTP sent successfully'                                                       => 'تم إرسال رمز التحقق بنجاح',
+    'OTP verified successfully'                                                   => 'تم التحقق من الرمز بنجاح',
+    'Invalid OTP'                                                                 => 'رمز التحقق غير صحيح',
+    'OTP expired'                                                                 => 'انتهت صلاحية رمز التحقق',
+    'Password updated successfully'                                               => 'تم تحديث كلمة المرور بنجاح',
+    'Password reset successfully'                                                 => 'تم إعادة تعيين كلمة المرور بنجاح',
+    'Profile updated successfully'                                                => 'تم تحديث الملف الشخصي بنجاح',
+    'Account is inactive. Please contact the administration'                      => 'الحساب غير نشط. يرجى التواصل مع الإدارة',
+    'Username must be a valid phone number (E.164 format) or email address'       => 'اسم المستخدم يجب أن يكون رقم هاتف صحيح (E.164) أو بريدًا إلكترونيًا',
+    'Invalid credentials'                                                         => 'بيانات الاعتماد غير صحيحة',
+    'Reset token is invalid or expired'                                           => 'رمز إعادة التعيين غير صالح أو منتهي الصلاحية',
+];

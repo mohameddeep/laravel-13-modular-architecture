@@ -2,42 +2,43 @@
 
 namespace App\Modules\Auth\Http\Controllers\Api\V1;
 
-use App\Modules\Base\Http\Controllers\BaseController;
-use App\Modules\Auth\Http\Requests\Api\Auth\StoreAuthRequest;
-use App\Modules\Auth\Http\Requests\Api\Auth\UpdateAuthRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\ResendOtpRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\SignInRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\SignUpRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\VerifyOtpRequest;
 use App\Modules\Auth\Http\Services\Api\Auth\AuthService;
+use App\Modules\Base\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuthController extends BaseController
 {
     public function __construct(
-        protected AuthService $authService
-    ) {
+        protected AuthService $authService,
+    ) {}
+
+    public function signUp(SignUpRequest $request): JsonResponse
+    {
+        return $this->authService->signUp($request);
     }
 
-    public function index(Request $request): JsonResponse
+    public function verifyOtp(VerifyOtpRequest $request): JsonResponse
     {
-        return $this->authService->index($request);
+        return $this->authService->verifyOtp($request);
     }
 
-    public function store(StoreAuthRequest $request): JsonResponse
+    public function resendOtp(ResendOtpRequest $request): JsonResponse
     {
-        return $this->authService->store($request);
+        return $this->authService->resendOtp($request);
     }
 
-    public function show(int $id): JsonResponse
+    public function signIn(SignInRequest $request): JsonResponse
     {
-        return $this->authService->show($id);
+        return $this->authService->signIn($request);
     }
 
-    public function update(UpdateAuthRequest $request, int $id): JsonResponse
+    public function signOut(Request $request): JsonResponse
     {
-        return $this->authService->update($request, $id);
-    }
-
-    public function destroy(int $id): JsonResponse
-    {
-        return $this->authService->destroy($id);
+        return $this->authService->signOut($request);
     }
 }

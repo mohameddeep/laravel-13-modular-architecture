@@ -6,20 +6,18 @@ use App\Modules\Auth\Http\Requests\Dashboard\Admin\StoreAdminRequest;
 use App\Modules\Auth\Http\Requests\Dashboard\Admin\UpdateAdminRequest;
 use App\Modules\Auth\Repositories\AdminRepositoryInterface;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Throwable;
 
 class AdminService
 {
     public function __construct(
-        protected AdminRepositoryInterface $adminRepository
-    ) {
-    }
+        private readonly AdminRepositoryInterface $adminRepository,
+    ) {}
 
     public function index(): View
     {
-        $items = $this->adminRepository->getAll();
+        $items = $this->adminRepository->query()->latest()->paginate(15);
 
         return view('auth::dashboard.admins.index', compact('items'));
     }
@@ -31,27 +29,18 @@ class AdminService
 
     public function store(StoreAdminRequest $request): RedirectResponse
     {
-        try {
-            DB::beginTransaction();
-            $this->adminRepository->create($request->validated());
-            DB::commit();
+        // Single insert — no transaction overhead needed
+        $this->adminRepository->create($request->validated());
 
-            return redirect()
-                ->route('dashboard.auth.index')
-                ->with('success', __('Created.'));
-        } catch (Throwable $e) {
-            DB::rollBack();
-
-            return back()->with('error', __('Something went wrong.'))->withInput();
-        }
+        return $this->successRedirect('dashboard.admins.index', 'dashboard.created_successfully');
     }
 
     public function edit(int $id): View|RedirectResponse
     {
         $admin = $this->adminRepository->getById($id);
 
-        if ($admin === null) {
-            return redirect()->route('dashboard.auth.index')->with('error', __('Not found.'));
+        if (! $admin) {
+            return $this->notFoundRedirect('dashboard.admins.index');
         }
 
         return view('auth::dashboard.admins.edit', compact('admin'));
@@ -59,49 +48,49 @@ class AdminService
 
     public function update(UpdateAdminRequest $request, int $id): RedirectResponse
     {
+        $admin = $this->adminRepository->getById($id);
+
+        if (! $admin) {
+            return $this->notFoundRedirect('dashboard.admins.index');
+        }
+
         try {
-            DB::beginTransaction();
-            $updated = $this->adminRepository->update($id, $request->validated());
+            $data = $request->validated();
 
-            if (! $updated) {
-                DB::rollBack();
-
-                return redirect()->route('dashboard.auth.index')->with('error', __('Not found.'));
+            if (empty($data['password'])) {
+                unset($data['password']);
             }
 
-            DB::commit();
+            $admin->update($data);
 
-            return redirect()
-                ->route('dashboard.auth.index')
-                ->with('success', __('Updated.'));
-        } catch (Throwable $e) {
-            DB::rollBack();
-
-            return back()->with('error', __('Something went wrong.'))->withInput();
+            return $this->successRedirect('dashboard.admins.index', 'dashboard.updated_successfully');
+        } catch (Throwable) {
+            return back()->with('error', __('dashboard.something_went_wrong'))->withInput();
         }
     }
 
     public function destroy(int $id): RedirectResponse
     {
-        try {
-            DB::beginTransaction();
-            $deleted = $this->adminRepository->delete($id);
+        $admin = $this->adminRepository->getById($id);
 
-            if ($deleted === null) {
-                DB::rollBack();
-
-                return redirect()->route('dashboard.auth.index')->with('error', __('Not found.'));
-            }
-
-            DB::commit();
-
-            return redirect()
-                ->route('dashboard.auth.index')
-                ->with('success', __('Deleted.'));
-        } catch (Throwable $e) {
-            DB::rollBack();
-
-            return redirect()->route('dashboard.auth.index')->with('error', __('Something went wrong.'));
+        if (! $admin) {
+            return $this->notFoundRedirect('dashboard.admins.index');
         }
+
+        $admin->delete();
+
+        return $this->successRedirect('dashboard.admins.index', 'dashboard.deleted_successfully');
+    }
+
+    // ── Private helpers ────────────────────────────────────────────────────────
+
+    private function successRedirect(string $route, string $messageKey): RedirectResponse
+    {
+        return redirect()->route($route)->with('success', __($messageKey));
+    }
+
+    private function notFoundRedirect(string $route): RedirectResponse
+    {
+        return redirect()->route($route)->with('error', __('dashboard.not_found'));
     }
 }

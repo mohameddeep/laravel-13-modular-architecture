@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'Success'                                                                     => 'Success',
+    'Created successfully'                                                        => 'Created successfully',
+    'Updated successfully'                                                        => 'Updated successfully',
+    'Deleted successfully'                                                        => 'Deleted successfully',
+    'Not found'                                                                   => 'Not found',
+    'Something went wrong'                                                        => 'Something went wrong',
+    'Unauthenticated'                                                             => 'Unauthenticated',
+    'Unauthorized'                                                                => 'Unauthorized',
+    'Login successful'                                                            => 'Login successful',
+    'Logout successful'                                                           => 'Logout successful',
+    'OTP sent successfully'                                                       => 'OTP sent successfully',
+    'OTP verified successfully'                                                   => 'OTP verified successfully',
+    'Invalid OTP'                                                                 => 'Invalid OTP',
+    'OTP expired'                                                                 => 'OTP has expired',
+    'Password updated successfully'                                               => 'Password updated successfully',
+    'Password reset successfully'                                                 => 'Password reset successfully',
+    'Profile updated successfully'                                                => 'Profile updated successfully',
+    'Account is inactive. Please contact the administration'                      => 'Account is inactive. Please contact the administration',
+    'Username must be a valid phone number (E.164 format) or email address'       => 'Username must be a valid phone number (E.164 format) or email address',
+    'Invalid credentials'                                                         => 'Invalid credentials',
+    'Reset token is invalid or expired'                                           => 'Reset token is invalid or expired',
+];

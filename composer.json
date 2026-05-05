@@ -8,7 +8,10 @@
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.0",
-        "laravel/tinker": "^3.0"
+        "laravel/sanctum": "^4.3",
+        "laravel/tinker": "^3.0",
+        "mcamara/laravel-localization": "^2.0",
+        "santigarcor/laratrust": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

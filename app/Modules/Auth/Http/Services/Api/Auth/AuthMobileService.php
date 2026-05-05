@@ -2,101 +2,149 @@
 
 namespace App\Modules\Auth\Http\Services\Api\Auth;
 
+use App\Modules\Auth\Http\Requests\Api\Auth\ResendOtpRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\SignInRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\SignUpRequest;
+use App\Modules\Auth\Http\Requests\Api\Auth\VerifyOtpRequest;
+use App\Modules\Auth\Http\Resources\User\UserResource;
 use App\Modules\Base\Http\Helpers\Http;
-use App\Modules\Base\Http\Traits\Responser;
-use App\Modules\Auth\Http\Requests\Api\Auth\StoreAuthRequest;
-use App\Modules\Auth\Http\Requests\Api\Auth\UpdateAuthRequest;
-use App\Modules\Auth\Http\Resources\Auth\AuthResource;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Throwable;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
+/**
+ * Mobile auth uses OTP-only flow (phone or email OTP, no password required).
+ */
 class AuthMobileService extends AuthService
 {
-    use Responser;
-
     public static function platform(): string
     {
         return 'mobile';
     }
 
-    public function index(Request $request): JsonResponse
+    /**
+     * Send OTP to phone or email — this acts as both sign-up and sign-in initiation.
+     */
+    public function signUp(SignUpRequest $request): JsonResponse
     {
-        $perPage = (int) $request->query('per_page', 15);
-        $paginator = $this->authRepository->paginate($perPage);
-
-        return $this->respondWithPaginator($paginator, AuthResource::class);
+        return $this->sendOtp($request->validated('username') ?? $request->validated('email') ?? $request->validated('phone'));
     }
 
-    public function store(StoreAuthRequest $request): JsonResponse
+    /**
+     * Verify OTP and return token; creates user if not found.
+     */
+    public function verifyOtp(VerifyOtpRequest $request): JsonResponse
     {
         try {
-            DB::beginTransaction();
-            $auth = $this->authRepository->create($request->validated());
-            DB::commit();
+            $data     = $request->validated();
+            $username = $data['username'];
+            $isPhone  = (bool) preg_match('/^\+[1-9]\d{7,15}$/', $username);
 
-            return $this->responseSuccess(Http::CREATED, __('Created.'), new AuthResource($auth));
-        } catch (Throwable $e) {
-            DB::rollBack();
+            $otp = $isPhone
+                ? $this->otpService->verifyPhoneOtpByToken($data['otp_token'], $data['code'])
+                : $this->otpService->verifyEmailOtpByToken($data['otp_token'], $data['code']);
 
-            return catchError($e);
-        }
-    }
-
-    public function show(int $id): JsonResponse
-    {
-        $auth = $this->authRepository->getById($id);
-
-        if ($auth === null) {
-            return $this->responseFail(Http::NOT_FOUND, __('Not found.'));
-        }
-
-        return $this->responseSuccess(Http::OK, __('OK.'), new AuthResource($auth));
-    }
-
-    public function update(UpdateAuthRequest $request, int $id): JsonResponse
-    {
-        try {
-            DB::beginTransaction();
-            $updated = $this->authRepository->update($id, $request->validated());
-
-            if (! $updated) {
-                DB::rollBack();
-
-                return $this->responseFail(Http::NOT_FOUND, __('Not found.'));
+            if ($otp instanceof JsonResponse) {
+                return $otp;
             }
 
-            $auth = $this->authRepository->getById($id);
-            DB::commit();
+            $user = $isPhone
+                ? $this->userRepository->findByPhone($username)
+                : $this->userRepository->findByEmail($username);
 
-            return $this->responseSuccess(Http::OK, __('Updated.'), new AuthResource($auth));
-        } catch (Throwable $e) {
-            DB::rollBack();
+            if (! $user) {
+                $userData = [
+                    'name'         => $isPhone ? $username : Str::before($username, '@'),
+                    'password'     => Str::random(40),
+                    'is_active'    => true,
+                    'otp_verified' => true,
+                ];
 
-            return catchError($e);
+                $userData[$isPhone ? 'phone' : 'email'] = $username;
+
+                $user    = $this->userRepository->create($userData);
+                $message = __('messages.Registration successful');
+            } else {
+                $this->userRepository->update($user->id, [
+                    'otp_verified' => true,
+                    'is_active'    => true,
+                ]);
+                $user    = $user->fresh();
+                $message = __('messages.Login successful');
+            }
+
+            $token = $user->createToken('mobile')->plainTextToken;
+
+            return responseSuccess(Http::OK, $message, [
+                'user'  => new UserResource($user),
+                'token' => $token,
+            ]);
+        } catch (Exception $e) {
+            Log::error('Mobile Verify OTP Error: '.$e->getMessage(), ['ip' => $request->ip()]);
+
+            return responseFail(Http::BAD_REQUEST, __('messages.Something went wrong'));
         }
     }
 
-    public function destroy(int $id): JsonResponse
+    public function resendOtp(ResendOtpRequest $request): JsonResponse
+    {
+        $token    = $request->validated('otp_token');
+        $existing = $this->otpService->resendEmailOtp($token);
+
+        if ($existing instanceof JsonResponse && $existing->getStatusCode() !== 200) {
+            return $this->otpService->resendPhoneOtp($token);
+        }
+
+        return $existing;
+    }
+
+    /**
+     * For mobile, signIn simply sends an OTP to the given username.
+     */
+    public function signIn(SignInRequest $request): JsonResponse
+    {
+        return $this->sendOtp($request->validated('username'));
+    }
+
+    public function signOut(Request $request): JsonResponse
     {
         try {
-            DB::beginTransaction();
-            $deleted = $this->authRepository->delete($id);
+            $request->user()->currentAccessToken()->delete();
 
-            if ($deleted === null) {
-                DB::rollBack();
-
-                return $this->responseFail(Http::NOT_FOUND, __('Not found.'));
-            }
-
-            DB::commit();
-
-            return $this->responseSuccess(Http::OK, __('Deleted.'));
-        } catch (Throwable $e) {
-            DB::rollBack();
-
-            return catchError($e);
+            return responseSuccess(Http::OK, __('messages.Successfully loggedOut'));
+        } catch (Exception $e) {
+            return responseFail(Http::BAD_REQUEST, __('messages.Something went wrong'));
         }
+    }
+
+    private function sendOtp(string $username): JsonResponse
+    {
+        $isPhone = (bool) preg_match('/^\+[1-9]\d{7,15}$/', $username);
+
+        $user   = $isPhone
+            ? $this->userRepository->findByPhone($username)
+            : $this->userRepository->findByEmail($username);
+
+        $userId = $user?->id;
+
+        if ($isPhone) {
+            $otp = $this->otpService->sendPhoneOtp($username, $user?->name ?? 'User', $userId);
+
+            return responseSuccess(Http::OK, __('messages.OTP_Is_Send'), [
+                'phone'              => $username,
+                'otp_token'          => $otp->token,
+                'expires_in_minutes' => 5,
+            ]);
+        }
+
+        $otp = $this->otpService->sendEmailOtp($username, $user?->name ?? 'User', $userId);
+
+        return responseSuccess(Http::OK, __('messages.OTP_Is_Send'), [
+            'email'              => $username,
+            'otp_token'          => $otp->token,
+            'expires_in_minutes' => 5,
+        ]);
     }
 }

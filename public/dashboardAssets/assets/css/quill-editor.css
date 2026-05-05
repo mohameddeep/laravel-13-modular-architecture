@@ -1,0 +1,122 @@
+/* Quill Editor Styles */
+.quill-editor {
+    background-color: #fff;
+    border: 1px solid #d8d6de;
+    border-radius: 0.357rem;
+}
+
+.quill-editor.is-invalid {
+    border-color: #ea5455;
+}
+
+.ql-toolbar {
+    border-top-left-radius: 0.357rem;
+    border-top-right-radius: 0.357rem;
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #d8d6de;
+}
+
+.ql-container {
+    border-bottom-left-radius: 0.357rem;
+    border-bottom-right-radius: 0.357rem;
+}
+
+.ql-editor {
+    min-height: 200px;
+    font-size: 1rem;
+    line-height: 1.45;
+    padding: 15px;
+}
+
+.ql-editor ul,
+.ql-editor ol {
+    padding-left: 2em;
+    padding-right: 0;
+    margin: 0.75em 0;
+    list-style-position: outside;
+}
+
+.ql-editor[dir="rtl"] ul,
+.ql-editor[dir="rtl"] ol {
+    padding-right: 2em;
+    padding-left: 0;
+}
+
+.ql-editor li {
+    margin-bottom: 0.5em;
+    line-height: 1.6;
+    padding-left: 0.3em;
+}
+
+.ql-editor[dir="rtl"] li {
+    padding-right: 0.3em;
+    padding-left: 0;
+}
+
+.ql-editor ul > li {
+    list-style-type: disc;
+}
+
+.ql-editor ol > li {
+    list-style-type: decimal;
+}
+
+.ql-editor.ql-blank::before {
+    font-style: normal;
+    color: #b8c2cc;
+    left: 15px;
+    right: 15px;
+}
+
+/* RTL Support */
+.ql-editor[dir="rtl"] {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Focus State */
+.quill-editor:focus-within {
+    border-color: #7367f0;
+    box-shadow: 0 3px 10px 0 rgba(34, 41, 47, 0.1);
+}
+
+/* Error State */
+.quill-editor.is-invalid:focus-within {
+    border-color: #ea5455;
+    box-shadow: 0 3px 10px 0 rgba(234, 84, 85, 0.1);
+}
+
+/* Toolbar customization */
+.ql-toolbar.ql-snow .ql-picker-label {
+    border: 1px solid transparent;
+    padding: 2px 4px;
+}
+
+.ql-toolbar.ql-snow .ql-picker-label:hover,
+.ql-toolbar.ql-snow button:hover {
+    color: #7367f0;
+}
+
+.ql-toolbar.ql-snow button.ql-active,
+.ql-toolbar.ql-snow .ql-picker-label.ql-active {
+    color: #7367f0;
+}
+
+/* Custom colors for primary theme */
+.ql-snow .ql-stroke {
+    stroke: #6e6b7b;
+}
+
+.ql-snow .ql-fill {
+    fill: #6e6b7b;
+}
+
+.ql-toolbar.ql-snow button:hover .ql-stroke,
+.ql-toolbar.ql-snow button.ql-active .ql-stroke {
+    stroke: #7367f0;
+}
+
+.ql-toolbar.ql-snow button:hover .ql-fill,
+.ql-toolbar.ql-snow button.ql-active .ql-fill {
+    fill: #7367f0;
+}

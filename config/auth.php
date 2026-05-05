@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Auth\Models\Admin;
 use App\Modules\Auth\Models\User;
 
 return [
@@ -39,8 +40,23 @@ return [
 
     'guards' => [
         'web' => [
-            'driver' => 'session',
+            'driver'   => 'session',
             'provider' => 'users',
+        ],
+
+        'api' => [
+            'driver'   => 'sanctum',
+            'provider' => 'users',
+        ],
+
+        'admin' => [
+            'driver'   => 'session',
+            'provider' => 'admins',
+        ],
+
+        'admin-api' => [
+            'driver'   => 'sanctum',
+            'provider' => 'admins',
         ],
     ],
 
@@ -64,13 +80,13 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            'model'  => env('AUTH_MODEL', User::class),
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'admins' => [
+            'driver' => 'eloquent',
+            'model'  => env('AUTH_ADMIN_MODEL', Admin::class),
+        ],
     ],
 
     /*
